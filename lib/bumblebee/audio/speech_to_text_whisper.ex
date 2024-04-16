@@ -138,11 +138,14 @@ defmodule Bumblebee.Audio.SpeechToTextWhisper do
       {:file, path} when is_binary(path) ->
         ffmpeg_read_as_pcm(path, sampling_rate)
 
+      {:file_url, url} when is_binary(url) ->
+        ffmpeg_read_as_pcm(url, sampling_rate, false)
+
       other ->
         cond do
           Enumerable.impl_for(other) == nil ->
             {:error,
-             "expected audio to be a 1-dimensional tensor, an enumerable, or {:file, path}, got: #{inspect(other)}"}
+             "expected audio to be a 1-dimensional tensor, an enumerable, {:file, path}, or {:file_url, url}, got: #{inspect(other)}"}
 
           chunk_num_seconds == nil ->
             {:error,
@@ -164,7 +167,7 @@ defmodule Bumblebee.Audio.SpeechToTextWhisper do
     end
   end
 
-  defp ffmpeg_read_as_pcm(path, sampling_rate) do
+  defp ffmpeg_read_as_pcm(path, sampling_rate, validate_file_exists \\ true) do
     channels = 1
 
     format =
@@ -177,7 +180,7 @@ defmodule Bumblebee.Audio.SpeechToTextWhisper do
       System.find_executable("ffmpeg") == nil ->
         {:error, "ffmpeg not found in PATH"}
 
-      not File.exists?(path) ->
+      validate_file_exists and not File.exists?(path) ->
         {:error, "no file found at #{path}"}
 
       true ->
